@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Arabia - Your Cartoon Cafe World!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@300;400;600;700&family=Patrick+Hand&family=Permanent+Marker&family=Cabin+Sketch:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --yellow: #FFD700;
+            --black: #0a0a0a;
+            --dark-gray: #1a1a1a;
+            --comic: 'Bangers', cursive;
+            --marker: 'Permanent Marker', cursive;
+            --sketch: 'Cabin Sketch', cursive;
+            --body: 'Fredoka', sans-serif;
+            --hand: 'Patrick Hand', cursive;
+        }
+
+        body {
+            font-family: var(--body);
+            background: var(--black);
+            color: var(--yellow);
+            overflow-x: hidden;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="%23FFD700"/><circle cx="10" cy="10" r="3" fill="%23000"/></svg>') 10 10, auto;
+        }
+
+        /* Canvas Background */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Hand-drawn doodles overlay */
+        .doodle-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.15;
+            background-image: 
+                radial-gradient(circle at 20% 30%, transparent 0%, transparent 49%, var(--yellow) 50%, transparent 51%),
+                radial-gradient(circle at 80% 70%, transparent 0%, transparent 49%, var(--yellow) 50%, transparent 51%),
+                radial-gradient(circle at 50% 90%, transparent 0%, transparent 49%, var(--yellow) 50%, transparent 51%);
+            background-size: 300px 300px, 400px 400px, 250px 250px;
+            background-position: 0 0, 100px 100px, 200px 50px;
+        }
+
+        /* Sticky Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: linear-gradient(180deg, var(--black) 0%, rgba(10,10,10,0.95) 100%);
+            border-bottom: 6px solid var(--yellow);
+            z-index: 1000;
+            padding: 0.5rem 2rem;
+            box-shadow: 0 5px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .nav-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            height: 70px;
+            width: auto;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+            animation: logo-pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes logo-pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.05) rotate(-2deg); }
+        }
+
+        .logo-text {
+            font-family: var(--comic);
+            font-size: 2rem;
+            color: var(--yellow);
+            text-shadow: 
+                3px 3px 0 #000,
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                0 0 20px rgba(255, 215, 0, 0.8);
+            display: none;
+        }
+
+        nav {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        nav a {
+            font-family: var(--marker);
+            font-size: 1.1rem;
+            color: var(--yellow);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        nav a::before {
+            content: '★';
+            position: absolute;
+            left: -10px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            border-color: var(--yellow);
+            transform: scale(1.1) rotate(-3deg);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        nav a:hover::before {
+            left: 5px;
+            opacity: 1;
+        }
+
+        /* Main Content */
+        main {
+            position: relative;
+            z-index: 2;
+            padding-top: 90px;
+        }
+
+        /* Comic Panel Style Sections */
+        .comic-section {
+            position: relative;
+            padding: 3rem 2rem;
+            margin: 2rem auto;
+            max-width: 1600px;
+            background: var(--dark-gray);
+            border: 8px solid var(--yellow);
+            box-shadow: 
+                inset 0 0 50px rgba(255, 215, 0, 0.1),
+                0 0 0 12px var(--black),
+                0 0 0 16px var(--yellow),
+                20px 20px 0 0 rgba(0,0,0,0.5);
+            clip-path: polygon(
+                0% 5%, 5% 0%, 95% 0%, 100% 5%,
+                100% 95%, 95% 100%, 5% 100%, 0% 95%
+            );
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: 90vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: var(--yellow);
+            color: var(--black);
+            font-family: var(--marker);
+            font-size: 1rem;
+            padding: 0.5rem 1.5rem;
+            border: 4px solid var(--black);
+            border-radius: 50px;
+            transform: rotate(-3deg);
+            margin-bottom: 1rem;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+        }
+
+        .hero-title {
+            font-family: var(--comic);
+            font-size: 5.5rem;
+            line-height: 0.9;
+            color: var(--yellow);
+            text-shadow: 
+                5px 5px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                0 0 30px rgba(255, 215, 0, 0.8);
+            margin-bottom: 1.5rem;
+            animation: title-wobble 4s infinite ease-in-out;
+        }
+
+        @keyframes title-wobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-1deg); }
+            75% { transform: rotate(1deg); }
+        }
+
+        .hero-subtitle {
+            font-family: var(--hand);
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 2rem;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 1rem;
+            border-left: 6px solid var(--yellow);
+            border-radius: 10px;
+        }
+
+        .hero-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-card {
+            background: rgba(255, 215, 0, 0.05);
+            padding: 1rem;
+            border: 3px solid var(--yellow);
+            border-radius: 15px;
+            font-family: var(--body);
+            transition: all 0.3s ease;
+        }
+
+        .detail-card:hover {
+            transform: scale(1.05) rotate(-2deg);
+            background: rgba(255, 215, 0, 0.15);
+        }
+
+        .detail-card strong {
+            display: block;
+            font-family: var(--marker);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--yellow);
+        }
+
+        /* Hero Illustration */
+        .hero-visual {
+            position: relative;
+            height: 600px;
+        }
+
+        .cafe-illustration {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Floating Elements */
+        .float-element {
+            position: absolute;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+
+        /* Cartoon Buttons */
+        .cartoon-btn {
+            font-family: var(--comic);
+            font-size: 1.4rem;
+            padding: 1.2rem 2.5rem;
+            background: var(--yellow);
+            color: var(--black);
+            border: 5px solid var(--black);
+            border-radius: 50px;
+            text-decoration: none;
+            display: inline-block;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 
+                0 8px 0 #000,
+                0 10px 25px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .cartoon-btn::before {
+            content: '▶';
+            margin-right: 0.5rem;
+        }
+
+        .cartoon-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 13px 0 #000,
+                0 15px 30px rgba(0,0,0,0.6);
+        }
+
+        .cartoon-btn:active {
+            transform: translateY(5px);
+            box-shadow: 
+                0 3px 0 #000,
+                0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        /* Section Titles */
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: var(--comic);
+            font-size: 4.5rem;
+            color: var(--yellow);
+            text-shadow: 
+                4px 4px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000,
+                0 0 40px rgba(255, 215, 0, 0.8);
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '★';
+            position: absolute;
+            font-size: 2rem;
+            color: var(--yellow);
+            animation: spin 4s linear infinite;
+        }
+
+        .section-title::before { left: -50px; }
+        .section-title::after { right: -50px; }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .section-subtitle {
+            font-family: var(--hand);
+            font-size: 1.5rem;
+            color: #fff;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .menu-item {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 6px solid var(--yellow);
+            border-radius: 30px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 215, 0, 0.05),
+                10px 10px 0 rgba(0,0,0,0.3);
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            animation: rotate-gradient 10s linear infinite;
+        }
+
+        @keyframes rotate-gradient {
+            100% { transform: rotate(360deg); }
+        }
+
+        .menu-item:hover {
+            transform: scale(1.05) rotate(-1deg);
+            border-color: #fff;
+            box-shadow: 
+                inset 0 0 30px rgba(255, 215, 0, 0.15),
+                15px 15px 0 rgba(0,0,0,0.4);
+        }
+
+        .menu-icon {
+            font-size: 5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        .menu-item h3 {
+            font-family: var(--marker);
+            font-size: 2.2rem;
+            color: var(--yellow);
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .menu-item p {
+            font-family: var(--body);
+            color: #fff;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .menu-item .special-note {
+            background: rgba(255, 215, 0, 0.15);
+            padding: 0.8rem;
+            border-left: 4px solid var(--yellow);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .price-badge {
+            background: var(--yellow);
+            color: var(--black);
+            font-family: var(--comic);
+            font-size: 1.8rem;
+            padding: 0.8rem 2rem;
+            border: 4px solid var(--black);
+            border-radius: 50px;
+            display: inline-block;
+            transform: rotate(-5deg);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.3);
+            margin-top: 1rem;
+        }
+
+        /* Feature Cards */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-box {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 5px solid var(--yellow);
+            border-radius: 25px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-box::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 215, 0, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+
+        .feature-box:hover::after {
+            width: 200%;
+            height: 200%;
+        }
+
+        .feature-box:hover {
+            transform: scale(1.08) rotate(-3deg);
+            border-color: #fff;
+        }
+
+        .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .feature-box h3 {
+            font-family: var(--marker);
+            font-size: 1.8rem;
+            color: var(--yellow);
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .feature-box p {
+            color: #fff;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Speech Bubbles */
+        .speech-bubble {
+            background: #fff;
+            color: var(--black);
+            padding: 2rem;
+            border: 5px solid var(--black);
+            border-radius: 30px;
+            position: relative;
+            font-family: var(--hand);
+            font-size: 1.4rem;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.2);
+            margin: 2rem 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: 50px;
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 30px solid var(--black);
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 56px;
+            width: 0;
+            height: 0;
+            border-left: 24px solid transparent;
+            border-right: 24px solid transparent;
+            border-top: 24px solid #fff;
+            z-index: 1;
+        }
+
+        /* Info Cards */
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .info-card {
+            background: var(--dark-gray);
+            border: 5px solid var(--yellow);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .info-card h4 {
+            font-family: var(--marker);
+            font-size: 1.8rem;
+            color: var(--yellow);
+            margin-bottom: 1rem;
+        }
+
+        .info-card ul {
+            list-style: none;
+        }
+
+        .info-card li {
+            padding: 0.8rem 0;
+            padding-left: 2rem;
+            position: relative;
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .info-card li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--yellow);
+            font-size: 1.5rem;
+        }
+
+        /* Chatbot */
+        .chatbot-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 2000;
+        }
+
+        .chatbot-trigger {
+            width: 90px;
+            height: 90px;
+            background: var(--yellow);
+            border: 6px solid var(--black);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            box-shadow: 
+                0 8px 0 var(--black),
+                0 12px 35px rgba(0,0,0,0.6);
+            transition: all 0.3s ease;
+            animation: chatbot-pulse 2s infinite ease-in-out;
+            position: relative;
+        }
+
+        @keyframes chatbot-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .chatbot-trigger::before {
+            content: 'CHAT!';
+            position: absolute;
+            top: -40px;
+            background: var(--yellow);
+            color: var(--black);
+            padding: 0.5rem 1rem;
+            border: 3px solid var(--black);
+            border-radius: 15px;
+            font-family: var(--comic);
+            font-size: 0.9rem;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+            animation: bounce-notice 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce-notice {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .chatbot-trigger:hover {
+            transform: scale(1.15) rotate(15deg);
+        }
+
+        .chatbot-window {
+            position: absolute;
+            bottom: 110px;
+            right: 0;
+            width: 380px;
+            height: 550px;
+            background: var(--dark-gray);
+            border: 6px solid var(--yellow);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chatbot-window.active {
+            display: flex;
+            animation: chat-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes chat-pop {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .chatbot-header {
+            background: var(--yellow);
+            color: var(--black);
+            padding: 1.5rem;
+            border-bottom: 5px solid var(--black);
+            font-family: var(--comic);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chatbot-body {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-msg {
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            border: 4px solid var(--black);
+            max-width: 85%;
+            font-family: var(--body);
+            animation: msg-slide 0.3s ease-out;
+        }
+
+        @keyframes msg-slide {
+            from { transform: translateX(-30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .chat-msg.bot {
+            background: var(--yellow);
+            color: var(--black);
+            align-self: flex-start;
+        }
+
+        .chat-msg.user {
+            background: #444;
+            color: #fff;
+            border-color: var(--yellow);
+            align-self: flex-end;
+        }
+
+        .chatbot-footer {
+            padding: 1rem;
+            border-top: 4px solid var(--yellow);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .chat-btn {
+            background: #444;
+            color: #fff;
+            border: 3px solid var(--yellow);
+            padding: 1rem;
+            border-radius: 15px;
+            font-family: var(--body);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .chat-btn:hover {
+            background: var(--yellow);
+            color: var(--black);
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--black);
+            border-top: 8px solid var(--yellow);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        footer .footer-logo {
+            height: 100px;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+        }
+
+        footer p {
+            font-family: var(--hand);
+            font-size: 1.3rem;
+            margin: 0.5rem 0;
+            color: var(--yellow);
+        }
+
+        footer .footer-links {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        footer .footer-links a {
+            color: var(--yellow);
+            text-decoration: none;
+            font-family: var(--marker);
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        footer .footer-links a:hover {
+            transform: scale(1.2);
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .hero-title { font-size: 3.5rem; }
+            .section-title { font-size: 3rem; }
+            .logo-img { height: 50px; }
+            nav { display: none; }
+            .menu-grid, .features-grid, .info-cards {
+                grid-template-columns: 1fr;
+            }
+            .chatbot-window {
+                width: 320px;
+                height: 500px;
+            }
+        }
+
+        /* Explosion Effect */
+        .explosion {
+            position: absolute;
+            font-family: var(--comic);
+            font-size: 4rem;
+            color: var(--yellow);
+            text-shadow: 3px 3px 0 #000;
+            pointer-events: none;
+            animation: explode 0.6s ease-out forwards;
+            z-index: 9999;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            100% { transform: scale(3) rotate(360deg); opacity: 0; }
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2rem;
+            animation: bounce-down 2s infinite ease-in-out;
+            color: var(--yellow);
+            z-index: 100;
+        }
+
+        @keyframes bounce-down {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas Background -->
+    <canvas id="particleCanvas"></canvas>
+    
+    <!-- Doodle Overlay -->
+    <div class="doodle-overlay"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-wrapper">
+            <div class="logo-container">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" 
+                     alt="Cafe Arabia Logo" 
+                     class="logo-img"
+                     id="logoImg">
+                <div class="logo-text">CAFE ARABIA</div>
+            </div>
+            <nav>
+                <a href="#home">HOME</a>
+                <a href="#menu">MENU</a>
+                <a href="#about">ABOUT</a>
+                <a href="#location">LOCATION</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section id="home" class="comic-section hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">🔥 CHENNAI'S COOLEST CAFE! 🔥</div>
+                <h1 class="hero-title">CAFE ARABIA!</h1>
+                <p class="hero-subtitle">
+                    ☕ Premium Coffee + 🧁 Arabian Sweets + 🍔 Delicious Food + 📚 Perfect Study Vibes!
+                </p>
+
+                <div class="hero-details">
+                    <div class="detail-card">
+                        <strong>🏪 BY SAVOURY SEA SHELL</strong>
+                        <p>Chennai's famous bakery brand - you know the quality is TOP!</p>
+                    </div>
+                    <div class="detail-card">
+                        <strong>📍 ANNA NAGAR EAST</strong>
+                        <p>Right near the main Savoury Sea Shell shop!</p>
+                    </div>
+                    <div class="detail-card">
+                        <strong>🎨 BLACK-YELLOW VIBES</strong>
+                        <p>Modern interiors with bright dessert displays!</p>
+                    </div>
+                    <div class="detail-card">
+                        <strong>💰 ₹300-500 PER MEAL</strong>
+                        <p>Full meal + coffee for one person!</p>
+                    </div>
+                </div>
+
+                <a href="https://wa.me/919876543210?text=Hey%20Cafe%20Arabia!%20I%20want%20to%20order!" 
+                   class="cartoon-btn" 
+                   target="_blank">
+                    📱 ORDER NOW ON WHATSAPP!
+                </a>
+
+                <div class="speech-bubble" style="margin-top: 2rem;">
+                    "The PERFECT spot for students and gamers! Cool AC, study-friendly atmosphere, and AMAZING coffee and sweets! Come chill with us for 1-2 hours before your gaming sessions or during study breaks!" 🎮📚
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="cafe-illustration">
+                    <svg viewBox="0 0 500 600" style="width: 100%; height: 100%;">
+                        <!-- Coffee Shop Building -->
+                        <rect x="50" y="200" width="400" height="350" fill="#1a1a1a" stroke="#FFD700" stroke-width="6"/>
+                        <rect x="80" y="230" width="150" height="150" fill="#2a2a2a" stroke="#FFD700" stroke-width="4"/>
+                        <text x="155" y="315" font-family="Arial Black" font-size="20" fill="#FFD700" text-anchor="middle">CAFE</text>
+                        <text x="155" y="340" font-family="Arial Black" font-size="20" fill="#FFD700" text-anchor="middle">ARABIA</text>
+                        
+                        <!-- Door -->
+                        <rect x="270" y="380" width="100" height="150" fill="#8B4513" stroke="#000" stroke-width="4"/>
+                        <circle cx="360" cy="450" r="5" fill="#FFD700"/>
+                        
+                        <!-- Awning -->
+                        <polygon points="40,200 460,200 450,170 50,170" fill="#FFD700" stroke="#000" stroke-width="4"/>
+                        
+                        <!-- Sign -->
+                        <rect x="150" y="120" width="200" height="60" fill="#FFD700" stroke="#000" stroke-width="4" rx="10"/>
+                        <text x="250" y="160" font-family="Bangers" font-size="28" fill="#000" text-anchor="middle">CAFE ARABIA</text>
+                        
+                        <!-- Coffee Cups -->
+                        <g class="float-element" style="animation-delay: 0s;">
+                            <ellipse cx="420" cy="100" rx="15" ry="8" fill="#8B4513" stroke="#000" stroke-width="2"/>
+                            <path d="M 405 100 L 410 150 L 430 150 L 435 100 Z" fill="#8B4513" stroke="#000" stroke-width="2"/>
+                            <path d="M 435 120 Q 455 120 455 140 Q 455 160 435 160" fill="none" stroke="#000" stroke-width="2"/>
+                        </g>
+                        
+                        <g class="float-element" style="animation-delay: 2s;">
+                            <ellipse cx="80" cy="150" rx="15" ry="8" fill="#FFD700" stroke="#000" stroke-width="2"/>
+                            <path d="M 65 150 L 70 200 L 90 200 L 95 150 Z" fill="#FFD700" stroke="#000" stroke-width="2"/>
+                        </g>
+                        
+                        <!-- Stars -->
+                        <text x="50" y="80" font-size="30" fill="#FFD700">⭐</text>
+                        <text x="420" y="50" font-size="25" fill="#FFD700">✨</text>
+                        <text x="250" y="60" font-size="35" fill="#FFD700">💫</text>
+                        
+                        <!-- Coffee Beans -->
+                        <g class="float-element" style="animation-delay: 1s;">
+                            <ellipse cx="100" cy="300" rx="10" ry="14" fill="#8B4513" stroke="#000" stroke-width="2" transform="rotate(30 100 300)"/>
+                        </g>
+                        <g class="float-element" style="animation-delay: 3s;">
+                            <ellipse cx="400" cy="250" rx="10" ry="14" fill="#8B4513" stroke="#000" stroke-width="2" transform="rotate(-20 400 250)"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Menu Section -->
+        <section id="menu" class="comic-section">
+            <div class="section-header">
+                <h2 class="section-title">🎪 OUR EPIC MENU! 🎪</h2>
+                <p class="section-subtitle">
+                    From STRONG coffee to AMAZING Arabic sweets - we've got everything you need for the perfect cafe experience!
+                </p>
+            </div>
+
+            <div class="menu-grid">
+                <!-- Coffee & Drinks -->
+                <div class="menu-item">
+                    <div class="menu-icon">☕</div>
+                    <h3>COFFEE & DRINKS</h3>
+                    <p>
+                        Start your day with our <strong>strong black coffee</strong> or smooth <strong>cappuccino</strong>! 
+                        We serve proper coffee with beautiful plates and cutlery if you order mains.
+                    </p>
+                    <p>Perfect fuel for studying, gaming prep, or just hanging out with friends!</p>
+                    <div class="price-badge">₹70 - ₹90</div>
+                </div>
+
+                <!-- Burgers & Food -->
+                <div class="menu-item">
+                    <div class="menu-icon">🍔</div>
+                    <h3>BURGERS & FOOD</h3>
+                    <p>
+                        Try our famous <strong>barbecue chicken burger</strong>, juicy steaks, tasty pizzas, and satisfying snacks!
+                    </p>
+                    <div class="special-note">
+                        💡 <strong>PRO TIP:</strong> Our burgers are quarter-plate style, so if you're REALLY hungry, 
+                        just ask for "double" and we'll hook you up with more! 🍔🍔
+                    </div>
+                    <div class="price-badge">₹180 - ₹250</div>
+                </div>
+
+                <!-- Arabic Sweets -->
+                <div class="menu-item">
+                    <div class="menu-icon">🧁</div>
+                    <h3>ARABIC SWEETS</h3>
+                    <p>
+                        Our <strong>signature Arabian sweets</strong> are LEGENDARY! Try our <strong>Baklava</strong>, 
+                        <strong>Basboosa/Basbousa</strong>, and amazing <strong>Pista/Almond semolina</strong> treats!
+                    </p>
+                    <div class="special-note">
+                        ⚠️ <strong>HEADS UP:</strong> These premium sweets aren't available EVERY day, 
+                        and we usually have limited items per visit - so grab them when you see them! 🎁
+                    </div>
+                    <div class="price-badge">₹100 - ₹150 /100g</div>
+                </div>
+
+                <!-- Premium Cakes -->
+                <div class="menu-item">
+                    <div class="menu-icon">🎂</div>
+                    <h3>PREMIUM CAKES</h3>
+                    <p>
+                        <strong>Freshly baked premium cakes</strong> by our parent brand Savoury Sea Shell! 
+                        Perfect for celebrations, birthdays, or just treating yourself to something special!
+                    </p>
+                    <p>Beautiful display of cakes that look as good as they taste! 😋</p>
+                    <div class="price-badge">ASK FOR PRICING!</div>
+                </div>
+            </div>
+
+            <div class="speech-bubble" style="margin-top: 3rem;">
+                💰 <strong>BUDGET BREAKDOWN:</strong> A full meal + coffee for one person costs around ₹300-₹500, 
+                depending on what you order! Perfect value for students and anyone looking for quality food and vibes! 🎉
+            </div>
+        </section>
+
+        <!-- About / Why We're Awesome Section -->
+        <section id="about" class="comic-section">
+            <div class="section-header">
+                <h2 class="section-title">⚡ WHY STUDENTS & GAMERS LOVE US! ⚡</h2>
+                <p class="section-subtitle">
+                    We're not just another cafe - we're YOUR spot for productivity, relaxation, and epic coffee!
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-box">
+                    <div class="feature-icon">❄️</div>
+                    <h3>COOL AC PARADISE</h3>
+                    <p>
+                        Beat the Chennai heat! Our AC is perfectly cooled so you can sit comfortably for 
+                        <strong>1-2 hours</strong> studying, planning, or just chilling. No sweating, just vibes! 🌡️
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">📚</div>
+                    <h3>STUDY-FRIENDLY ZONE</h3>
+                    <p>
+                        Not too loud, not too quiet - JUST RIGHT! Perfect for students to focus on exams, 
+                        assignments, or plan their next gaming session. Bring your laptop, we got you! 💻
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">🎮</div>
+                    <h3>GAMER HQ</h3>
+                    <p>
+                        Popular spot BEFORE gaming! Grab coffee + snacks, strategize with your squad, 
+                        and get that caffeine boost before hitting the gaming center. Energy = WINS! 🏆
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">🎨</div>
+                    <h3>MODERN AESTHETIC</h3>
+                    <p>
+                        <strong>Black-and-yellow themed</strong> interiors with bright, beautiful displays of 
+                        cakes, sweets, and breads. Every corner is Instagram-worthy! 📸✨
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">💑</div>
+                    <h3>PERFECT FOR DATES</h3>
+                    <p>
+                        Cozy seating for couples and small groups. Romantic, casual, and comfortable. 
+                        Not a loud party place - just good vibes for meaningful conversations! 💕
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">🏪</div>
+                    <h3>SAVOURY SEA SHELL QUALITY</h3>
+                    <p>
+                        Run by Chennai's <strong>famous bakery brand</strong>! You already know Savoury Sea Shell, 
+                        so you KNOW the quality is absolutely TOP-NOTCH! 👑
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">☕</div>
+                    <h3>COFFEE + LIGHT FOOD</h3>
+                    <p>
+                        Perfect combo of strong coffee, light bites, and sweet treats. Whether you want 
+                        a quick snack or a full meal, we've got exactly what you need! 🍽️
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">🌙</div>
+                    <h3>CHILL HANGOUT SPOT</h3>
+                    <p>
+                        This is NOT a loud, chaotic party cafe. We're all about that relaxed, 
+                        casual atmosphere where you can actually talk, think, and enjoy! 😌
+                    </p>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-icon">🎯</div>
+                    <h3>EASY LOCATION</h3>
+                    <p>
+                        Right on the main road in Anna Nagar East, opposite Savoury Sea Shell. 
+                        Super easy to find - you can't miss us! 📍
+                    </p>
+                </div>
+            </div>
+
+            <div class="info-cards">
+                <div class="info-card">
+                    <h4>🎭 THE VIBE</h4>
+                    <ul>
+                        <li>Casual hangout atmosphere</li>
+                        <li>Perfect for solo studying</li>
+                        <li>Great for couples</li>
+                        <li>Small group friendly</li>
+                        <li>Not a party place (intentionally!)</li>
+                        <li>Clean and well-maintained</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4>⏰ PERFECT FOR</h4>
+                    <ul>
+                        <li>Pre-exam study sessions</li>
+                        <li>Before/after gaming</li>
+                        <li>Weekend hangouts</li>
+                        <li>Coffee + work sessions</li>
+                        <li>Date nights</li>
+                        <li>Friend catch-ups</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4>🌟 WHAT MAKES US SPECIAL</h4>
+                    <ul>
+                        <li>Arabian sweets (unique!)</li>
+                        <li>Premium Savoury Sea Shell quality</li>
+                        <li>Modern black-yellow aesthetic</li>
+                        <li>Comfortable seating for hours</li>
+                        <li>Proper plates & cutlery</li>
+                        <li>Student-budget friendly</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Location Section -->
+        <section id="location" class="comic-section">
+            <div class="section-header">
+                <h2 class="section-title">📍 FIND US HERE! 📍</h2>
+                <p class="section-subtitle">
+                    Located in the heart of Anna Nagar East - right where all the action is!
+                </p>
+            </div>
+
+            <div class="speech-bubble">
+                <strong style="font-size: 1.6rem; display: block; margin-bottom: 1rem;">🏪 CAFE ARABIA</strong>
+                <p style="margin-bottom: 1rem;">
+                    📌 <strong>Anna Nagar East, Chennai</strong><br>
+                    Near / Opposite <strong>Savoury Sea Shell</strong> on Main Road
+                </p>
+                <p style="margin-bottom: 1.5rem;">
+                    🎯 Super easy to find - look for our black-and-yellow themed cafe with beautiful dessert displays 
+                    right next to the famous Savoury Sea Shell bakery!
+                </p>
+                <p style="font-size: 1.2rem; background: rgba(255, 215, 0, 0.1); padding: 1rem; border-radius: 15px;">
+                    💡 <strong>PRO TIP:</strong> If you're coming from other parts of Chennai, 
+                    just ask for "Savoury Sea Shell Anna Nagar" - everyone knows it! Then look for Cafe Arabia right there! 🎉
+                </p>
+            </div>
+
+            <div class="info-cards" style="margin-top: 3rem;">
+                <div class="info-card">
+                    <h4>🚗 HOW TO GET HERE</h4>
+                    <ul>
+                        <li>Main road location - easy access</li>
+                        <li>Near Savoury Sea Shell landmark</li>
+                        <li>Plenty of parking nearby</li>
+                        <li>Well-connected by public transport</li>
+                        <li>Walking distance from local area</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4>📞 GET IN TOUCH</h4>
+                    <ul>
+                        <li>WhatsApp: Click button below!</li>
+                        <li>Walk-in: Always welcome!</li>
+                        <li>Takeaway available</li>
+                        <li>Follow us for updates</li>
+                        <li>Share with your friends!</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h4>⭐ WHAT TO EXPECT</h4>
+                    <ul>
+                        <li>Cool AC environment</li>
+                        <li>Black-yellow themed interiors</li>
+                        <li>Bright dessert displays</li>
+                        <li>Comfortable seating</li>
+                        <li>Friendly atmosphere</li>
+                        <li>Premium quality food</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="https://wa.me/919876543210?text=Hey%20Cafe%20Arabia!%20I%27d%20like%20to%20visit%20your%20cafe!" 
+                   class="cartoon-btn" 
+                   target="_blank">
+                    💬 CHAT WITH US ON WHATSAPP!
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" 
+             alt="Cafe Arabia" 
+             class="footer-logo"
+             id="footerLogo">
+        <p style="font-family: var(--comic); font-size: 2rem; margin: 1rem 0;">🎨 CAFE ARABIA 🎨</p>
+        <p>☕ Premium Coffee | 🧁 Arabian Sweets | 🍔 Delicious Food | 📚 Study Vibes</p>
+        <p>🏪 By Savoury Sea Shell - Chennai's Famous Bakery Brand</p>
+        <p>📍 Anna Nagar East, Chennai | ₹300-500 per meal</p>
+        <div class="footer-links">
+            <a href="#home">HOME</a>
+            <a href="#menu">MENU</a>
+            <a href="#about">ABOUT</a>
+            <a href="#location">LOCATION</a>
+        </div>
+        <p style="margin-top: 2rem; opacity: 0.7; font-size: 1rem;">
+            Made with 💛 for Chennai's coolest cafe! | Website by ASH-DEV
+        </p>
+    </footer>
+
+    <!-- Chatbot Widget -->
+    <div class="chatbot-container">
+        <div class="chatbot-trigger" id="chatTrigger">
+            🤖
+        </div>
+        <div class="chatbot-window" id="chatWindow">
+            <div class="chatbot-header">
+                <span style="font-size: 2rem;">☕</span>
+                <span>BEAN BUDDY - YOUR CAFE GUIDE!</span>
+            </div>
+            <div class="chatbot-body" id="chatBody">
+                <div class="chat-msg bot">
+                    Hey there, friend! ☕ I'm Bean Buddy, your personal Cafe Arabia guide! 
+                    How can I help you discover the BEST cafe experience in Chennai? 🎉
+                </div>
+            </div>
+            <div class="chatbot-footer">
+                <button class="chat-btn" data-msg="menu">🍽️ Tell me about the menu!</button>
+                <button class="chat-btn" data-msg="location">📍 Where are you located?</button>
+                <button class="chat-btn" data-msg="vibes">✨ What's the vibe like?</button>
+                <button class="chat-btn" data-msg="sweets">🧁 Tell me about Arabic sweets!</button>
+                <button class="chat-btn" data-msg="order">📱 I want to order now!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Indicator (only visible on first screen) -->
+    <div class="scroll-indicator" id="scrollIndicator">
+        ⬇️
+    </div>
+
+    <script>
+        // ========================================
+        // CANVAS PARTICLE SYSTEM
+        // ========================================
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.emoji = ['☕', '🫘', '⭐', '✨', '💫'][Math.floor(Math.random() * 5)];
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.font = `${this.size * 10}px Arial`;
+                ctx.fillText(this.emoji, this.x, this.y);
+            }
+        }
+
+        const particles = [];
+        for (let i = 0; i < 30; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+
+        animateParticles();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // ========================================
+        // LOAD LOGO IMAGE
+        // ========================================
+        const logoPath = '/mnt/user-data/uploads/0b226c450798410ac541646c86ec31afd840e5beab817a5d84fa821e7db61981ec84c3b4a3f072a7a2e1899c9fb06c6e14d9c237f1186b06136514fbe2f2a07b2f2cb87305da603a8bb1a8a3478c09f36908093c6713329397e20d0a3e057cf3.png';
+        
+        // Convert uploaded logo to base64 for embedding
+        fetch(logoPath)
+            .then(r => r.blob())
+            .then(blob => {
+                const reader = new FileReader();
+                reader.onload = function() {
+                    document.getElementById('logoImg').src = this.result;
+                    document.getElementById('footerLogo').src = this.result;
+                };
+                reader.readAsDataURL(blob);
+            })
+            .catch(() => {
+                // Fallback if logo can't load
+                console.log('Logo loading from path');
+                document.getElementById('logoImg').src = logoPath;
+                document.getElementById('footerLogo').src = logoPath;
+            });
+
+        // ========================================
+        // GSAP ANIMATIONS
+        // ========================================
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero animations
+        gsap.from('.hero-badge', {
+            duration: 0.8,
+            scale: 0,
+            rotation: 360,
+            ease: 'back.out(2)'
+        });
+
+        gsap.from('.hero-title', {
+            duration: 1.2,
+            y: -100,
+            opacity: 0,
+            ease: 'bounce.out',
+            delay: 0.3
+        });
+
+        gsap.from('.hero-subtitle', {
+            duration: 1,
+            x: -100,
+            opacity: 0,
+            delay: 0.6
+        });
+
+        gsap.from('.detail-card', {
+            duration: 0.8,
+            scale: 0,
+            opacity: 0,
+            stagger: 0.1,
+            ease: 'back.out(1.7)',
+            delay: 0.9
+        });
+
+        gsap.from('.hero-visual', {
+            duration: 1.5,
+            scale: 0,
+            rotation: 360,
+            opacity: 0,
+            delay: 0.5,
+            ease: 'elastic.out(1, 0.5)'
+        });
+
+        // Menu section
+        gsap.from('.menu-item', {
+            scrollTrigger: {
+                trigger: '#menu',
+                start: 'top center',
+                toggleActions: 'play none none reverse'
+            },
+            duration: 0.8,
+            y: 100,
+            opacity: 0,
+            stagger: 0.2,
+            ease: 'back.out(1.5)'
+        });
+
+        // Features
+        gsap.from('.feature-box', {
+            scrollTrigger: {
+                trigger: '#about',
+                start: 'top center'
+            },
+            duration: 0.6,
+            scale: 0,
+            rotation: 180,
+            opacity: 0,
+            stagger: 0.08,
+            ease: 'back.out(2)'
+        });
+
+        // Info cards
+        gsap.from('.info-card', {
+            scrollTrigger: {
+                trigger: '.info-cards',
+                start: 'top center'
+            },
+            duration: 0.8,
+            y: 80,
+            opacity: 0,
+            stagger: 0.2,
+            ease: 'power3.out'
+        });
+
+        // Location section
+        gsap.from('#location .speech-bubble', {
+            scrollTrigger: {
+                trigger: '#location',
+                start: 'top center'
+            },
+            duration: 1,
+            scale: 0,
+            opacity: 0,
+            ease: 'back.out(2)'
+        });
+
+        // ========================================
+        // CHATBOT FUNCTIONALITY
+        // ========================================
+        const chatTrigger = document.getElementById('chatTrigger');
+        const chatWindow = document.getElementById('chatWindow');
+        const chatBody = document.getElementById('chatBody');
+
+        chatTrigger.addEventListener('click', () => {
+            chatWindow.classList.toggle('active');
+        });
+
+        const responses = {
+            menu: "Our menu is INCREDIBLE! ☕ We've got strong black coffee & cappuccino (₹70-90), AMAZING burgers & food (₹180-250) - and remember, burgers are quarter-plate so ask for double if you're hungry! 🍔 Plus our LEGENDARY Arabic sweets like Baklava & Basboosa (₹100-150/100g) - but they're not available every day, so grab them when you see them! 🧁",
+            
+            location: "We're located in Anna Nagar East, Chennai! 📍 Right near/opposite Savoury Sea Shell on the main road. Super easy to find - everyone knows Savoury Sea Shell! We're the black-and-yellow themed cafe right there. Come visit us! 🎉",
+            
+            vibes: "The vibes here are PERFECT! ✨ We've got cool AC so you can sit for 1-2 hours comfortably, study-friendly atmosphere (not too loud!), modern black-yellow aesthetic, and we're run by Chennai's famous Savoury Sea Shell brand. Perfect for students, gamers, couples, or just chilling! 📚☕",
+            
+            sweets: "Our Arabic sweets are LEGENDARY! 🧁 We have authentic Baklava, Basboosa/Basbousa, and amazing Pista/Almond semolina-based treats! They're ₹100-150 per 100g. BUT here's the thing - they're premium and not available every day, and we usually have limited items per visit. So when you see them, GRAB THEM! They're that good! ✨",
+            
+            order: "AWESOME! You can order RIGHT NOW via WhatsApp! 📱 Just click the 'ORDER NOW' button anywhere on the site, or click this link and we'll help you get your favorite coffee, food, and sweets delivered! Let's gooo! 🎉"
+        };
+
+        document.querySelectorAll('.chat-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const msgType = e.target.dataset.msg;
+                
+                // Add user message
+                const userMsg = document.createElement('div');
+                userMsg.className = 'chat-msg user';
+                userMsg.textContent = e.target.textContent;
+                chatBody.appendChild(userMsg);
+                
+                // Scroll to bottom
+                chatBody.scrollTop = chatBody.scrollHeight;
+                
+                // Add bot response after delay
+                setTimeout(() => {
+                    const botMsg = document.createElement('div');
+                    botMsg.className = 'chat-msg bot';
+                    botMsg.textContent = responses[msgType];
+                    chatBody.appendChild(botMsg);
+                    
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                }, 800);
+            });
+        });
+
+        // ========================================
+        // EXPLOSION EFFECTS ON BUTTON CLICKS
+        // ========================================
+        document.querySelectorAll('.cartoon-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const explosions = ['POW!', 'BOOM!', 'YUM!', 'WOW!', 'BAM!', 'ZAP!'];
+                const explosion = document.createElement('div');
+                explosion.className = 'explosion';
+                explosion.textContent = explosions[Math.floor(Math.random() * explosions.length)];
+                explosion.style.left = e.pageX + 'px';
+                explosion.style.top = e.pageY + 'px';
+                document.body.appendChild(explosion);
+                
+                setTimeout(() => explosion.remove(), 600);
+            });
+        });
+
+        // ========================================
+        // SMOOTH SCROLL FOR NAV LINKS
+        // ========================================
+        document.querySelectorAll('nav a, .footer-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const target = document.querySelector(targetId);
+                if (target) {
+                    target.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                }
+            });
+        });
+
+        // ========================================
+        // SCROLL INDICATOR
+        // ========================================
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollIndicator.style.display = 'none';
+            } else {
+                scrollIndicator.style.display = 'block';
+            }
+        });
+
+        // ========================================
+        // PARALLAX EFFECT
+        // ========================================
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('.hero-visual, .float-element');
+            
+            parallaxElements.forEach(el => {
+                const speed = 0.5;
+                el.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+
+        // ========================================
+        // HOVER SOUND EFFECT (OPTIONAL)
+        // ========================================
+        document.querySelectorAll('.cartoon-btn, .menu-item, .feature-box').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                // Optional: Add sound effect here if you want
+                el.style.transition = 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            });
+        });
+
+        // ========================================
+        // CONSOLE ART
+        // ========================================
+        console.log('%c☕ CAFE ARABIA ☕', 'font-size: 40px; color: #FFD700; text-shadow: 3px 3px 0 #000; font-family: Arial Black;');
+        console.log('%cWelcome to the best cafe website in Chennai!', 'font-size: 16px; color: #FFD700;');
+        console.log('%cMade with 💛 by ASH-DEV', 'font-size: 14px; color: #fff;');
+
+        // ========================================
+        // MOBILE MENU TOGGLE (if needed)
+        // ========================================
+        // Add mobile menu functionality if you want a hamburger menu later
+
+        // ========================================
+        // LOADING COMPLETE
+        // ========================================
+        window.addEventListener('load', () => {
+            console.log('🎉 Cafe Arabia website fully loaded!');
+            
+            // Add a subtle entrance animation
+            gsap.from('body', {
+                duration: 0.5,
+                opacity: 0,
+                ease: 'power2.out'
+            });
+        });
+    </script>
+</body>
+</html>
